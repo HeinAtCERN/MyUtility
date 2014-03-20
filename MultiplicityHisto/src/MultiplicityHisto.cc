@@ -107,7 +107,7 @@ MultiplicityHisto::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         }
     }
 
-    edm::Handle<std::vector<reco::Candidate> > candidateHandle;
+    edm::Handle<reco::CandidateView> candidateHandle;
     iEvent.getByLabel(src_, candidateHandle);
 
     histo_->Fill(candidateHandle->size(), weight);

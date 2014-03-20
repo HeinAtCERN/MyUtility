@@ -20,6 +20,7 @@
 
 // system include files
 #include <memory>
+#include <vector>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -29,7 +30,9 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Common/interface/Ptr.h"
+#include "DataFormats/Candidate/interface/CompositePtrCandidate.h"
+#include "CommonTools/CandUtils/interface/AddFourMomenta.h"
 
 //
 // class declaration
@@ -53,43 +56,23 @@ class CandidatePairProducer : public edm::EDProducer {
       virtual void endLuminosityBlock(edm::LuminosityBlock&, edm::EventSetup const&);
 
       // ----------member data ---------------------------
+      edm::InputTag src_;
+      AddFourMomenta adder_;
 };
-
-//
-// constants, enums and typedefs
-//
-
-
-//
-// static data member definitions
-//
 
 //
 // constructors and destructor
 //
-CandidatePairProducer::CandidatePairProducer(const edm::ParameterSet& iConfig)
+CandidatePairProducer::CandidatePairProducer(const edm::ParameterSet& iConfig):
+    src_(iConfig.getParameter<edm::InputTag>("src")),
+    adder_(AddFourMomenta())
 {
-   //register your products
-/* Examples
-   produces<ExampleData2>();
-
-   //if do put with a label
-   produces<ExampleData2>("label");
- 
-   //if you want to put into the Run
-   produces<ExampleData2,InRun>();
-*/
-   //now do what ever other initialization is needed
-  
+    produces<std::vector<reco::CompositePtrCandidate> >();
 }
 
 
 CandidatePairProducer::~CandidatePairProducer()
 {
- 
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
-
 }
 
 
@@ -101,24 +84,25 @@ CandidatePairProducer::~CandidatePairProducer()
 void
 CandidatePairProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   using namespace edm;
-/* This is an event example
-   //Read 'ExampleData' from the Event
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
+    edm::Handle<reco::CandidateView> src;
+    iEvent.getByLabel(src_, src);
 
-   //Use the ExampleData to create an ExampleData2 which 
-   // is put into the Event
-   std::auto_ptr<ExampleData2> pOut(new ExampleData2(*pIn));
-   iEvent.put(pOut);
-*/
+    if (src->size() < 2) {
+        return;
+    }
 
-/* this is an EventSetup example
-   //Read SetupData from the SetupRecord in the EventSetup
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-*/
- 
+    std::vector<reco::CompositePtrCandidate>* out = new std::vector<reco::CompositePtrCandidate>();
+    for (unsigned i=0; i<src->size()-1; ++i) {
+        for (unsigned j=i+1; j<src->size(); ++j) {
+            out->push_back(reco::CompositePtrCandidate());
+            out->back().addDaughter(reco::CandidatePtr(src, i));
+            out->back().addDaughter(reco::CandidatePtr(src, j));
+            adder_.set(out->back());
+        }
+    }
+
+    std::auto_ptr<std::vector<reco::CompositePtrCandidate> > pOut(out);
+    iEvent.put(pOut);
 }
 
 // ------------ method called once each job just before starting event loop  ------------

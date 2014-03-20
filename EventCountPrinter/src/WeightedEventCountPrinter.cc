@@ -32,7 +32,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "FWCore/Framework/interface/LuminosityBlock.h"
-#include "MyProducts/MergeableFloatCounter/interface/MergeableFloatCounter.h"
+#include "MyProducts/MyProducts/interface/MergeableFloatCounter.h"
 //
 // class declaration
 //

@@ -25,7 +25,7 @@ Description: An event counter that can store the number of events in the lumi bl
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-#include "MyProducts/MergeableFloatCounter/interface/MergeableFloatCounter.h"
+#include "MyProducts/MyProducts/interface/MergeableFloatCounter.h"
 
 
 class WeightedEventCountProducer : public edm::EDProducer {
