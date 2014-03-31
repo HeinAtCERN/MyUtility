@@ -87,17 +87,15 @@ CandidatePairProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup
     edm::Handle<reco::CandidateView> src;
     iEvent.getByLabel(src_, src);
 
-    if (src->size() < 2) {
-        return;
-    }
-
     std::vector<reco::CompositePtrCandidate>* out = new std::vector<reco::CompositePtrCandidate>();
-    for (unsigned i=0; i<src->size()-1; ++i) {
-        for (unsigned j=i+1; j<src->size(); ++j) {
-            out->push_back(reco::CompositePtrCandidate());
-            out->back().addDaughter(reco::CandidatePtr(src, i));
-            out->back().addDaughter(reco::CandidatePtr(src, j));
-            adder_.set(out->back());
+    if (src->size() > 1) {
+        for (unsigned i=0; i<src->size()-1; ++i) {
+            for (unsigned j=i+1; j<src->size(); ++j) {
+                out->push_back(reco::CompositePtrCandidate());
+                out->back().addDaughter(reco::CandidatePtr(src, i));
+                out->back().addDaughter(reco::CandidatePtr(src, j));
+                adder_.set(out->back());
+            }
         }
     }
 
