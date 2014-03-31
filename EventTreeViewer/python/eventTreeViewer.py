@@ -1,8 +1,19 @@
 
 
+import pypdt
 from PyQt4 import QtGui
 from DataFormats.FWLite import Events,Handle
-a = QtGui.QApplication([])
+app = QtGui.QApplication([])
+
+
+def gp_eq(a, b):
+    return (
+        a.pdgId() == b.pdgId()
+        and a.status() == b.status()
+        and a.px() == b.px()
+        and a.py() == b.py()
+        and a.pz() == b.pz()
+    )
 
 
 class EventTreeViewer(QtGui.QTreeWidget):
@@ -17,33 +28,32 @@ class EventTreeViewer(QtGui.QTreeWidget):
         self.clear()
         handle = Handle("vector<reco::GenParticle>")
         event.getByLabel(self.collection, handle)
-        def fill_tree(gen_particle, parent_item):
-            expanded = False
-            for p in xrange(gen_particle.numberOfDaughters()):
-                p = gen_particle.daughter(p)
-                item = QtGui.QTreeWidgetItem(
-                    parent_item,
-                    [
-                        "%d" % p.pdgId(),
-                        "%d" % p.status(),
-                        "%f" % p.energy(),
-                        "%f" % p.px(),
-                        "%f" % p.py(),
-                        "%f" % p.pz(),
-                    ]
-                )
-                if not parent_item:
-                    self.addTopLevelItem(item)
-                if expand_key_func and expand_key_func(p):
-                    expanded = True
-                expanded = fill_tree(p, item) or expanded
+
+        def fill_tree(p, parent_item):
+            item = QtGui.QTreeWidgetItem(
+                parent_item,
+                [
+                    "%d" % p.pdgId(),
+                    "%d" % p.status(),
+                    "%f" % p.energy(),
+                    "%f" % p.px(),
+                    "%f" % p.py(),
+                    "%f" % p.pz(),
+                ]
+            )
+            if not parent_item:
+                self.addTopLevelItem(item)
+            expanded = expand_key_func and expand_key_func(p)
+            for d in xrange(p.numberOfDaughters()):
+                d = p.daughter(d)
+                expanded = fill_tree(d, item) or expanded
             if parent_item and expanded:
                 parent_item.setExpanded(True)
             return expanded
 
-        for gp in iter(handle.product()):
-            if not gp.mother():
-                fill_tree(gp, None)
+        for gp in (p for p in handle.product() if not p.mother()):
+            fill_tree(gp, None)
+
 
 
 def event_iterator(filename, handles=None):
@@ -69,9 +79,19 @@ def open_viewer(filename, expand_key_func=None, collection_name=None):
     return skipper
 
 
-fname_hein_whiz = "/disk1/tholen/eventFiles/backup/whiz_000.root"
-fname_hein_nlo  = "/disk1/tholen/eventFiles/fromGrid20130618/TTNLO_000.root"
-fname_hein_mg   = "/disk1/tholen/eventFiles/fromGrid20130618/TTJets_000.root"
+fname_hein = "/afs/desy.de/user/t/tholenhe/xxl-af-cms/samples/Zbb_batch1/ZbbhadronicAODSIM1.root"
+
 
 def expand_photons_25(particle):
     return particle.pdgId() == 22 and particle.et() > 25.
+
+
+def expand_z_boson(particle):
+    return particle.pdgId() == 23
+
+
+def expand_final_b(gp):
+    return pypdt.hasBottom(abs(gp.pdgId())) and not any(
+                    pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
+                    for i in xrange(gp.numberOfDaughters())
+            )
