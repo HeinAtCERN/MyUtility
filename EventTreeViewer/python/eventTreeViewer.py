@@ -1,6 +1,5 @@
 
 
-import pypdt
 from PyQt4 import QtGui
 from DataFormats.FWLite import Events,Handle
 app = QtGui.QApplication([])
@@ -22,6 +21,7 @@ class EventTreeViewer(QtGui.QTreeWidget):
         self.setColumnCount(1)
         self.setHeaderLabels(["pdg", "status", "e", "px", "py", "pz"])
         self.insertTopLevelItems(0, [QtGui.QTreeWidgetItem()])
+        self.header().resizeSection(0, 400)
         self.collection = "genParticles"
 
     def setEventTree(self, event, expand_key_func=None):
@@ -55,13 +55,13 @@ class EventTreeViewer(QtGui.QTreeWidget):
             fill_tree(gp, None)
 
 
-
 def event_iterator(filename, handles=None):
     """handles is a list of tuples: (varname, type, InputTag)"""
     events = Events(filename)
-    if not handles: handles = []
+    if not handles:
+        handles = []
     for evt in events.__iter__():
-        for name,typ,inputtag in handles:
+        for name, typ, inputtag in handles:
             handle = Handle(typ)
             evt.getByLabel(inputtag, handle)
             setattr(evt, "hndl_" + name, handle)
@@ -71,11 +71,14 @@ def event_iterator(filename, handles=None):
 def open_viewer(filename, expand_key_func=None, collection_name=None):
     evtit = event_iterator(filename)
     w = EventTreeViewer()
-    if collection_name: w.collection = collection_name
+    if collection_name:
+        w.collection = collection_name
+
     def skipper():
         w.setEventTree(evtit.next(), expand_key_func)
     skipper()
     w.show()
+    w.showMaximized()
     return skipper
 
 
@@ -91,6 +94,7 @@ def expand_z_boson(particle):
 
 
 def expand_final_b(gp):
+    import pypdt
     return pypdt.hasBottom(abs(gp.pdgId())) and not any(
                     pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
                     for i in xrange(gp.numberOfDaughters())
