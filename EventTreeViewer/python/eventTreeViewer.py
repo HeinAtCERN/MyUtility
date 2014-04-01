@@ -1,4 +1,17 @@
+"""
+eventTreeViewer.py
 
+Usage:
+cmsenv
+ipython eventTreeViewer.py
+
+event_skipper = open_viewer("file_with_genParticle_collection.root")
+event_skipper()  # this skips to the next event
+
+As a second argument to open_viewer(...), a function for expanding the 
+tree can be passed. Checkout the expand_xyz functions below. E.g.
+event_skipper = open_viewer("file.root", expand_z_boson)
+"""
 
 import pypdt
 from PyQt4 import QtGui
