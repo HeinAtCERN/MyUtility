@@ -1,18 +1,6 @@
-
-
 from PyQt4 import QtGui
 from DataFormats.FWLite import Events,Handle
 app = QtGui.QApplication([])
-
-
-def gp_eq(a, b):
-    return (
-        a.pdgId() == b.pdgId()
-        and a.status() == b.status()
-        and a.px() == b.px()
-        and a.py() == b.py()
-        and a.pz() == b.pz()
-    )
 
 
 class EventTreeViewer(QtGui.QTreeWidget):
@@ -27,7 +15,7 @@ class EventTreeViewer(QtGui.QTreeWidget):
     def setEventTree(self, event, expand_key_func=None):
         self.clear()
         handle = Handle("vector<reco::GenParticle>")
-        event.getByLabel(self.collection, handle)
+        event.getByLabel(self.collection, handle)f
 
         def fill_tree(p, parent_item):
             item = QtGui.QTreeWidgetItem(
