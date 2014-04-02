@@ -1,5 +1,5 @@
-from PyQt4 import QtGui
-from DataFormats.FWLite import Events,Handle
+from PyQt4 import QtCore, QtGui
+from DataFormats.FWLite import Events, Handle
 app = QtGui.QApplication([])
 
 
@@ -7,15 +7,21 @@ class EventTreeViewer(QtGui.QTreeWidget):
     def __init__(self, parent=None):
         super(EventTreeViewer, self).__init__(parent)
         self.setColumnCount(1)
-        self.setHeaderLabels(["pdg", "status", "e", "px", "py", "pz"])
+        self.setHeaderLabels(
+            ["pdg", "status", "e", "px", "py", "pz", "vx", "vy", "vz"]
+        )
         self.insertTopLevelItems(0, [QtGui.QTreeWidgetItem()])
         self.header().resizeSection(0, 400)
+        self.setSelectionMode(3)
+        self.itemClicked.connect(self.multiselectItems)
         self.collection = "genParticles"
+        self.particle_map = {}    # repr(genPraticle) -> list of tree items
+        self.item_map = {}        # tree items -> list of tree items
 
     def setEventTree(self, event, expand_key_func=None):
         self.clear()
         handle = Handle("vector<reco::GenParticle>")
-        event.getByLabel(self.collection, handle)f
+        event.getByLabel(self.collection, handle)
 
         def fill_tree(p, parent_item):
             item = QtGui.QTreeWidgetItem(
@@ -27,8 +33,12 @@ class EventTreeViewer(QtGui.QTreeWidget):
                     "%f" % p.px(),
                     "%f" % p.py(),
                     "%f" % p.pz(),
+                    "%f" % p.vx(),
+                    "%f" % p.vy(),
+                    "%f" % p.vz(),
                 ]
             )
+            self.add_item_to_particle_map(p, item)
             if not parent_item:
                 self.addTopLevelItem(item)
             expanded = expand_key_func and expand_key_func(p)
@@ -41,6 +51,28 @@ class EventTreeViewer(QtGui.QTreeWidget):
 
         for gp in (p for p in handle.product() if not p.mother()):
             fill_tree(gp, None)
+            break  # from one proton is enough
+
+        self.make_item_map()
+
+    def add_item_to_particle_map(self, p, i):
+        repr_p = repr(p)
+        if repr_p in self.particle_map:
+            self.particle_map[repr_p].append(i)
+        else:
+            self.particle_map[repr_p] = [i]
+
+    def make_item_map(self):
+        self.item_map.clear()
+        for item_list in self.particle_map.itervalues():
+            for item in item_list:
+                self.item_map[item] = item_list
+        self.particle_map.clear()
+
+    def multiselectItems(self, item, column):
+        items = self.item_map[item]
+        for i in items:
+            i.setSelected(True)
 
 
 def event_iterator(filename, handles=None):
