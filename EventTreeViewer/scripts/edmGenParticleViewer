@@ -1,0 +1,2 @@
+ipython -i $CMSSW_BASE/src/MyUtility/EventTreeViewer/python/eventTreeViewer.py
+

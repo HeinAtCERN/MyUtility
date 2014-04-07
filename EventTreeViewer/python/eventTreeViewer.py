@@ -2,11 +2,11 @@
 eventTreeViewer.py
 
 Usage:
-cmsenv
-ipython eventTreeViewer.py
+edmGenParticleViewer
 
-event_skipper = open_viewer("file_with_genParticle_collection.root")
-event_skipper()  # this skips to the next event
+# in ipython shell:
+next_event = open_viewer("file_with_genParticle_collection.root")
+next_event()  # this skips to the next event
 
 As a second argument to open_viewer(...), a function for expanding the 
 tree can be passed. Checkout the expand_xyz functions below. E.g.
@@ -117,7 +117,7 @@ def open_viewer(filename, expand_key_func=None, collection_name=None):
     return skipper
 
 
-fname_hein = "/afs/desy.de/user/t/tholenhe/xxl-af-cms/samples/Zbb_batch1/ZbbhadronicAODSIM1.root"
+fname_hein = "/nfs/dust/cms/user/tholenhe/samples/Zbb_batch1/ZbbhadronicAODSIM1.root"
 
 
 def expand_photons_25(particle):
@@ -134,3 +134,9 @@ def expand_final_b(gp):
                     pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
                     for i in xrange(gp.numberOfDaughters())
             )
+
+
+if __name__ == "__main__":
+    print __doc__
+
+
