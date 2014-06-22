@@ -15,6 +15,12 @@ deltaR_cand_to_cand = lambda a, b: DeltaR(a.p4(), b.p4())
 deltaR_vec_to_cand = lambda a, b: deltaR_vec_to_vec(a, b.p4())
 
 
+def mkrtvec(numpy_vec):
+    return ROOT.Math.XYZVector(
+        *numpy_vec[:3]
+    )
+
+
 def mkvec(root_vec):
     return numpy.array([
         root_vec.x(),
