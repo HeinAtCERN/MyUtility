@@ -5,6 +5,8 @@ from libcpp.map cimport map
 def get_all_daughters(gen_particle_collection, mothers, invert=False):
     cdef map[int,int] tag
     cdef int id_gp 
+    cdef int d
+    cdef int i
     cdef size_t ivrt = 0 if invert else 1
 
     # start with direct daughters
