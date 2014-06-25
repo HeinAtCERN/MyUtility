@@ -1,32 +1,74 @@
 import pypdt
+from libcpp.vector cimport vector
 from libcpp.map cimport map
+from libcpp.pair cimport pair
+from cython.operator cimport dereference as deref
+from cpython.ref cimport PyObject
+import ROOT
+try:
+    ROOT.reco.GenParticle
+except AttributeError:
+    from DataFormats.FWLite import Events
+genPartType = ROOT.reco.GenParticle
 
 
-def get_all_daughters(gen_particle_collection, mothers, invert=False):
-    cdef map[int,int] tag
-    cdef int id_gp 
-    cdef int d
-    cdef int i
-    cdef size_t ivrt = 0 if invert else 1
+cdef extern from "DataFormats/HepMCCandidate/interface/GenParticle.h" namespace "reco":
+    cdef cppclass GenParticle:
+        GenParticle() except +
+        size_t numberOfDaughters()
+        GenParticle * daughter(size_t) const
+        int pdgId()
+ctypedef const GenParticle * GenPartPtr
+
+
+cdef extern from "TPython.h":
+    cdef cppclass TPython:
+        TPython() except +
+        void * ObjectProxy_AsVoidPtr(PyObject *)
+        PyObject * ObjectProxy_FromVoidPtr(void *, const char *)
+cdef TPython tp
+
+
+def get_all_daughters(gen_particles):
+    cdef map[GenPartPtr, int] all_daughters
+    cdef vector[GenPartPtr] all_daughters_vec
+    cdef vector[GenPartPtr] * tmp1 = new vector[GenPartPtr]()
+    cdef vector[GenPartPtr] * tmp2 = new vector[GenPartPtr]()
+    cdef size_t i
+    cdef size_t j
+    cdef GenPartPtr cgp1
+    cdef GenPartPtr cgp2
 
     # start with direct daughters
-    for m in mothers:
-        for d in range(m.numberOfDaughters()):
-            tag[id(m.daughter(d))] = 1
+    for gp in gen_particles:
+        if not type(gp) == genPartType:
+             raise RuntimeError(
+                 'get_all_daughters only accepts a list of GenParticle object')
+        cgp1 = <GenParticle *> tp.ObjectProxy_AsVoidPtr(<PyObject *> gp) 
+        for i in range(cgp1.numberOfDaughters()):
+            cgp2 = <GenParticle *> cgp1.daughter(i)
+            if not all_daughters.count(cgp2):
+                all_daughters[cgp2] = 1
+                all_daughters_vec.push_back(cgp2)
+                tmp1.push_back(cgp2)
 
-    for gp in gen_particle_collection:
-        id_gp = id(gp)
-        if tag.count(id_gp):
-            continue
-        for i in range(gp.numberOfMothers()):
-            if tag.count(id(gp.mother(i))):
-                tag[id_gp] = 1
-                break
+    while tmp1.size() > 0:
+        for cgp1 in deref(tmp1):
+            for j in range(cgp1.numberOfDaughters()):
+                cgp2 = <GenParticle *> cgp1.daughter(j)
+                if not all_daughters.count(cgp2):
+                    all_daughters[cgp2] = 1
+                    all_daughters_vec.push_back(cgp2)
+                    tmp2.push_back(cgp2)
+        tmp1.clear()
+        tmp1, tmp2 = tmp2, tmp1
+
+    del tmp1
+    del tmp2
 
     return list(
-        p
-        for p in gen_particle_collection
-        if tag.count(id(p)) != invert
+        <object> tp.ObjectProxy_FromVoidPtr(<void *> cgp1, 'reco::GenParticle')
+        for cgp1 in all_daughters_vec
     )
 
 

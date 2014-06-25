@@ -67,5 +67,10 @@ def final_d_hadrons(gen_particles):
 
 import pyximport
 pyximport.install()
-from libMyUtilityPythonUtil import final_b_hadrons, get_all_daughters
+from libMyUtilityPythonUtil import final_b_hadrons
+from libMyUtilityPythonUtil import get_all_daughters as get_all_fast
+
+def get_all_daughters(gen_p, mothers, inv=False):
+    return get_all_fast(mothers)
+
 
