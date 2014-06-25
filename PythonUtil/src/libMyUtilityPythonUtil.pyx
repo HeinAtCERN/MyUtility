@@ -86,13 +86,24 @@ cdef int _has_b_cont(int id):
 
 
 def final_b_hadrons(gen_particles):
-    res = []
+    cdef GenPartPtr cgp1
+    cdef size_t i
+    cdef list res = []
+    cdef int no_b_dau
+
     for gp in gen_particles:
-        if _has_b_cont(abs(gp.pdgId())) and not any(
-                _has_b_cont(abs(gp.daughter(i).pdgId()))
-                for i in xrange(gp.numberOfDaughters())
-        ):
-            res.append(gp)
+        if not type(gp) == genPartType:
+             raise RuntimeError(
+                 'get_all_daughters only accepts a list of GenParticle object')
+        cgp1 = <GenPartPtr> tp.ObjectProxy_AsVoidPtr(<PyObject *> gp) 
+        if _has_b_cont(abs(cgp1.pdgId())):
+            no_b_dau = 1
+            for i in range(cgp1.numberOfDaughters()):
+                if _has_b_cont(abs((<GenPartPtr> cgp1.daughter(i)).pdgId())):
+                    no_b_dau = 0
+                    break
+            if no_b_dau:
+                res.append(gp)
     return res
 
 
