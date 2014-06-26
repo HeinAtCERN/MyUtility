@@ -85,25 +85,48 @@ cdef int _has_b_cont(int id):
             return 0
 
 
-def final_b_hadrons(gen_particles):
-    cdef GenPartPtr cgp1
+cdef int _is_final_b(GenPartPtr cgp):
     cdef size_t i
+    cdef int no_b_dau = 1
+    cdef GenPartPtr dau
+    if _has_b_cont(abs(cgp.pdgId())):
+        for i in range(cgp.numberOfDaughters()):
+            dau = <GenPartPtr> cgp.daughter(i)
+            if _has_b_cont(abs(dau.pdgId())):
+                no_b_dau = 0
+                break
+        return no_b_dau
+    return 0
+
+
+cdef list final_b_hadrons_vec(vector[GenParticle] * gen_particles):
+    cdef GenPartPtr cgp
     cdef list res = []
-    cdef int no_b_dau
+    cdef size_t i
+
+    for i in range(gen_particles.size()):
+        cgp = &gen_particles.at(i)
+        if _is_final_b(cgp):
+            res.append(<object> tp.ObjectProxy_FromVoidPtr(
+                <void *> cgp, 'reco::GenParticle'
+            ))
+    return res
+
+
+def final_b_hadrons(gen_particles):
+    cdef GenPartPtr cgp
+    cdef list res = []
+
+    if str(type(gen_particles)) == "<class 'DataFormats.FWLite.vector<reco::GenParticle>'>":
+         return final_b_hadrons_vec(<vector[GenParticle] *> tp.ObjectProxy_AsVoidPtr(<PyObject *> gen_particles))
 
     for gp in gen_particles:
         if not type(gp) == genPartType:
              raise RuntimeError(
                  'get_all_daughters only accepts a list of GenParticle object')
-        cgp1 = <GenPartPtr> tp.ObjectProxy_AsVoidPtr(<PyObject *> gp) 
-        if _has_b_cont(abs(cgp1.pdgId())):
-            no_b_dau = 1
-            for i in range(cgp1.numberOfDaughters()):
-                if _has_b_cont(abs((<GenPartPtr> cgp1.daughter(i)).pdgId())):
-                    no_b_dau = 0
-                    break
-            if no_b_dau:
-                res.append(gp)
+        cgp = <GenPartPtr> tp.ObjectProxy_AsVoidPtr(<PyObject *> gp) 
+        if _is_final_b(cgp):
+            res.append(gp)
     return res
 
 
