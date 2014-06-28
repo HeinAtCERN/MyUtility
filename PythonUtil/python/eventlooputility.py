@@ -3,25 +3,51 @@ import numpy
 import ROOT
 ROOT.gSystem.Load('libGenVector')
 ROOT.gROOT.ProcessLine('gErrorIgnoreLevel = kError;')
+DeltaR = ROOT.Math.VectorUtil.DeltaR
+Pi = ROOT.Math.Pi()
 
 
 def deltaR_vec_to_vec(a, b):
-    return (
-        (a.eta()-b.eta())**2
-        + (float(a.phi())-float(b.phi()))**2
-    )**.5
-DeltaR = ROOT.Math.VectorUtil.DeltaR
+    d_eta = a.eta()-b.eta()
+    d_phi = abs(float(a.phi())-float(b.phi()))
+    if d_phi > Pi:
+         d_phi -= 2.*Pi 
+    return (d_eta**2 + d_phi**2)**.5
 deltaR_cand_to_cand = lambda a, b: DeltaR(a.p4(), b.p4())
 deltaR_vec_to_cand = lambda a, b: deltaR_vec_to_vec(a, b.p4())
 
 
 def mkrtvec(numpy_vec):
+    """
+    numpy array => ROOT.Math.XYZVector
+
+    >>> a = ROOT.Math.XYZVector(1.,2.,3.)
+    >>> b = mkrtvec(mkvec(a))
+    >>> a.x() == b.x()
+    True
+    >>> a.y() == b.y()
+    True
+    >>> a.z() == b.z()
+    True
+    """
     return ROOT.Math.XYZVector(
         *numpy_vec[:3]
     )
 
 
 def mkvec(root_vec):
+    """
+    ROOT.Math.XYZVector => numpy array
+
+    >>> a = numpy.array([1., 2., 3.])
+    >>> b = mkvec(mkrtvec(a))
+    >>> a[0] == b[0]
+    True
+    >>> a[1] == b[1]
+    True
+    >>> a[2] == b[2]
+    True
+    """
     return numpy.array([
         root_vec.x(),
         root_vec.y(),
@@ -68,4 +94,8 @@ def covariance_significance(secondary_vertex, gen_particle):
         res = numpy.sqrt(res)
     return res
 
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
 
