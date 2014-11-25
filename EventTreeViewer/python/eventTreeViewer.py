@@ -5,15 +5,36 @@ Usage:
 edmGenParticleViewer
 
 # in ipython shell:
-next_event = open_viewer("file_with_genParticle_collection.root")
-next_event()  # this skips to the next event
+next_event = open_viewer(
+    'eventfile.root',               # filename
+    'prunedGenParticles',           # collection name
+    lambda gp: gp.pdgId() == 25     # optional: expand function (see below)
+)
+next_event()                        # this skips to the next event
 
-As a second argument to open_viewer(...), a function for expanding the 
-tree can be passed. Checkout the expand_xyz functions below. E.g.
-event_skipper = open_viewer("file.root", expand_z_boson)
+The third argument to open_viewer(...) is optional. If given it needs to be a
+function that accepts a genParticle instance and return True or False. If True
+is returned for a given particle, the tree view will expand all particles up to
+the given particle. These examples are defined in this scope:
+
+def expand_photons_25(particle):
+    return particle.pdgId() == 22 and particle.et() > 25.
+
+def expand_z_boson(particle):
+    return particle.pdgId() == 23
+
+def expand_final_b(gp):
+    import pypdt
+    return (
+        pypdt.hasBottom(abs(gp.pdgId())) and
+        not any(
+            pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
+            for i in xrange(gp.numberOfDaughters())
+        )
+    )
 """
 
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtGui
 from DataFormats.FWLite import Events, Handle
 app = QtGui.QApplication([])
 
@@ -29,7 +50,7 @@ class EventTreeViewer(QtGui.QTreeWidget):
         self.header().resizeSection(0, 400)
         self.setSelectionMode(3)
         self.itemClicked.connect(self.multiselectItems)
-        self.collection = "genParticles"
+        self.collection = None
         self.particle_map = {}    # repr(genPraticle) -> list of tree items
         self.item_map = {}        # tree items -> list of tree items
 
@@ -103,7 +124,7 @@ def event_iterator(filename, handles=None):
         yield evt
 
 
-def open_viewer(filename, expand_key_func=None, collection_name=None):
+def open_viewer(filename, collection_name, expand_key_func=None):
     evtit = event_iterator(filename)
     w = EventTreeViewer()
     if collection_name:
@@ -117,9 +138,6 @@ def open_viewer(filename, expand_key_func=None, collection_name=None):
     return skipper
 
 
-fname_hein = "/nfs/dust/cms/user/tholenhe/samples/Zbb_batch1/ZbbhadronicAODSIM1.root"
-
-
 def expand_photons_25(particle):
     return particle.pdgId() == 22 and particle.et() > 25.
 
@@ -130,10 +148,13 @@ def expand_z_boson(particle):
 
 def expand_final_b(gp):
     import pypdt
-    return pypdt.hasBottom(abs(gp.pdgId())) and not any(
-                    pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
-                    for i in xrange(gp.numberOfDaughters())
-            )
+    return (
+        pypdt.hasBottom(abs(gp.pdgId())) and
+        not any(
+            pypdt.hasBottom(abs(gp.daughter(i).pdgId()))
+            for i in xrange(gp.numberOfDaughters())
+        )
+    )
 
 
 if __name__ == "__main__":
