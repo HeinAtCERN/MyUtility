@@ -11,6 +11,7 @@ next_event = open_viewer(
     lambda gp: gp.pdgId() == 25     # optional: expand function (see below)
 )
 next_event()                        # this skips to the next event
+next_event(5)                       # skip five event ahead
 
 The third argument to open_viewer(...) is optional. If given it needs to be a
 function that accepts a genParticle instance and return True or False. If True
@@ -130,8 +131,12 @@ def open_viewer(filename, collection_name, expand_key_func=None):
     if collection_name:
         w.collection = collection_name
 
-    def skipper():
-        w.setEventTree(evtit.next(), expand_key_func)
+    def skipper(n=1):
+        nxt = evtit.next()
+        if n > 1:
+            for _ in xrange(n):
+                nxt = evtit.next()
+        w.setEventTree(nxt, expand_key_func)
     skipper()
     w.show()
     w.showMaximized()
